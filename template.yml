@@ -1,0 +1,287 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Sample Application to test serverless HttpAPI
+
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+
+#   PublisherLambda:
+#     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+#     Properties:
+#       CodeUri: PublisherLambda/
+#       Handler: app.lambdaHandler
+#       Runtime: nodejs16.x
+#       # DeadLetterQueue:
+#       #   Type: SQS
+#       #   TargetArn: !GetAtt DataPublisherDLQ.Arn
+#       Policies:
+#         - DynamoDBCrudPolicy:
+#             TableName : !Ref DataStoreTable
+#         - KMSDecryptPolicy:
+#             KeyId: alias/SQSKey
+#       Architectures:
+#         - x86_64
+#       Events:
+#         SQSEvent:
+#           Type: SQS
+#           Properties:
+#             BatchSize: 100
+#             MaximumBatchingWindowInSeconds: 10
+#             Queue: !GetAtt DataPublisherSQS.Arn
+
+#   HttpApi:
+#     Type: AWS::Serverless::HttpApi
+#     Properties:
+#       Auth:
+#         Authorizers:
+#           LambdaRequestAuthorizer:
+#             AuthorizerPayloadFormatVersion: 2.0
+#             EnableSimpleResponses: false
+#             FunctionArn: arn:aws:lambda:us-east-1:045900352349:function:authLambda
+#             FunctionInvokeRole: !Ref MyAuthFunctionRole
+#             Identity:
+#               Headers:
+#                 - Authorization
+#         DefaultAuthorizer: LambdaRequestAuthorizer
+#       DefinitionBody:
+#         openapi: "3.0.1"
+#         info:
+#           title: "HttpApiToSQS"
+#         paths:
+#           /insertIntoQueue:
+#             post:
+#               responses:
+#                 default:
+#                   description: "SQS response"
+#               x-amazon-apigateway-integration:
+#                 integrationSubtype: "SQS-SendMessage"
+#                 credentials: !GetAtt MyHttpApiRole.Arn
+#                 requestParameters:
+#                   MessageBody: "$request.body.MessageBody"
+#                   QueueUrl: !Ref DataPublisherSQS
+#                 payloadFormatVersion: "1.0"
+#                 type: "aws_proxy"
+#                 connectionType: "INTERNET"
+#         x-amazon-apigateway-importexport-version: "1.0" 
+
+#   MyHttpApiRole:
+#       Type: "AWS::IAM::Role"
+#       Properties:
+#         AssumeRolePolicyDocument:
+#           Version: "2012-10-17"
+#           Statement:
+#             - Effect: "Allow"
+#               Principal:
+#                 Service: "apigateway.amazonaws.com"
+#               Action: 
+#                 - "sts:AssumeRole"
+#         Policies:
+#           - PolicyName: ApiDirectWriteToSQS
+#             PolicyDocument:
+#               Version: '2012-10-17'
+#               Statement:
+#                 Action:
+#                 - sqs:SendMessage
+#                 Effect: Allow
+#                 Resource:
+#                   - !GetAtt DataPublisherSQS.Arn
+      
+
+#   MyAuthFunctionRole:
+#     Type: AWS::IAM::Role
+#     Properties:
+#       AssumeRolePolicyDocument:
+#         Version: "2012-10-17"
+#         Statement:
+#           - Effect: Allow
+#             Principal:
+#               Service:
+#                 - apigateway.amazonaws.com
+#             Action:
+#               - 'sts:AssumeRole'
+#       Policies: 
+#         - PolicyName: MyPolicy
+#           PolicyDocument:
+#             Version: "2012-10-17"
+#             Statement:
+#               - Effect: Allow
+#                 Action: 'lambda:InvokeFunction'
+#                 Resource: arn:aws:lambda:us-east-1:045900352349:function:authLambda
+# # published data store here would look like - {id, JSON object}
+#   DataStoreTable:
+#     Type: AWS::DynamoDB::Table
+#     Properties: 
+#       AttributeDefinitions: 
+#         - AttributeName: id
+#           AttributeType: N
+#       KeySchema:
+#         - AttributeName: id
+#           KeyType: HASH
+#       ProvisionedThroughput: 
+#         ReadCapacityUnits: 5
+#         WriteCapacityUnits: 5
+
+# # standard queue by default -- will there be two msgs with identical content?
+# # Encryption at rest
+#   DataPublisherSQS:
+#     Type: AWS::SQS::Queue
+#     Properties:
+#       KmsMasterKeyId: alias/SQSKey
+#       MessageRetentionPeriod: 1209600
+#       QueueName: DataPublisherQueue
+#       RedrivePolicy:
+#         deadLetterTargetArn: !GetAtt DataPublisherDLQ.Arn
+#         maxReceiveCount: 2 #set later to 20
+
+
+#   DataPublisherDLQ:
+#     Type: AWS::SQS::Queue
+#     Properties:
+#       KmsMasterKeyId: alias/SQSKey
+#       MessageRetentionPeriod: 1209600
+#       QueueName: DataPublisherDLQ
+  
+#   DLQTopic:
+#     # Condition: CreateProdResource
+#     Type: AWS::SNS::Topic
+#     Properties:
+#       Subscription:
+#         - Endpoint: subhamckp1@gmail.com
+#           Protocol: email
+  
+#   DLQDepthAlarm:
+#     # Condition: CreateProdResource
+#     Type: AWS::CloudWatch::Alarm
+#     # DependsOn:
+#     #   - DLQTopic
+#     Properties:
+#       AlarmActions:
+#         - Ref: DLQTopic
+#       AlarmDescription: "Used to alert when there is msg in the DLQ"
+#       AlarmName: DLQDepthAlarm
+#       Dimensions:
+#         - Name: QueueName
+#           Value: !GetAtt DataPublisherDLQ.QueueName
+#       MetricName: ApproximateNumberOfMessagesVisible
+#       Namespace: AWS/SQS
+#       EvaluationPeriods: "1"
+#       Period: '300'
+#       Statistic: Sum
+#       Threshold: '1'
+#       ComparisonOperator: GreaterThanOrEqualToThreshold
+#       TreatMissingData: notBreaching
+
+  #Httapi
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    # Properties:
+    #   Auth:
+    #     Authorizers:
+    #       LambdaRequestAuthorizer:
+    #         AuthorizerPayloadFormatVersion: 2.0
+    #         EnableSimpleResponses: false
+    #         FunctionArn: arn:aws:lambda:us-east-1:045900352349:function:authLambda
+    #         FunctionInvokeRole: !Ref MyAuthFunctionRole
+    #         Identity:
+    #           Headers:
+    #             - Authorization
+    #     DefaultAuthorizer: LambdaRequestAuthorizer  
+
+# https://github.com/aws-samples/simple-websockets-chat-app/issues/22
+  Authorizer:
+    Type: 'AWS::ApiGatewayV2::Authorizer'
+    Properties:
+      Name: LambdaAuth
+      ApiId: !Ref HttpApi
+      AuthorizerType: REQUEST
+      AuthorizerPayloadFormatVersion: "2.0"
+      AuthorizerUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:045900352349:function:authLambda/invocations
+      AuthorizerCredentialsArn: !GetAtt MyAuthFunctionRole.Arn
+      IdentitySource:
+        - $request.header.Authorization
+
+  MyHttpApiRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal:
+                Service: "apigateway.amazonaws.com"
+              Action: 
+                - "sts:AssumeRole"
+        Policies:
+          - PolicyName: ApiDirectWriteToSQS
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                Action:
+                - sqs:SendMessage
+                Effect: Allow
+                Resource:
+                  - !GetAtt DataPublisherSQS.Arn
+
+  #integration
+  APIVersionIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      ConnectionType: INTERNET
+      CredentialsArn: !GetAtt MyHttpApiRole.Arn
+      IntegrationType: AWS_PROXY
+      # IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:sqs:action/SendMessage"
+      RequestParameters:
+        MessageBody: "$request.body"
+        QueueUrl: !Ref DataPublisherSQS
+      IntegrationSubtype: "SQS-SendMessage"
+      # IntegrationMethod: POST
+      PayloadFormatVersion: "1.0"
+  
+  APIVersionRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      RouteKey: 'POST /v1/datasources'
+      ApiId: !Ref HttpApi
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref Authorizer
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref APIVersionIntegration
+
+  #sqs
+  DataPublisherSQS:
+    Type: AWS::SQS::Queue
+
+
+  MyAuthFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies: 
+        - PolicyName: MyPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 'lambda:InvokeFunction'
+                Resource: "*"
+
+
+    
+
+
+
